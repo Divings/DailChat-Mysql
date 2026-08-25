@@ -8,6 +8,11 @@ import shutil
 import pyfiglet
 import traceback
 import time
+from pack.sessions import (
+    Create_session,
+    End_session,
+    Check_previous_session
+)
 from pack.memory_crypto import (
     encrypt_memory,
     decrypt_memory
@@ -23,6 +28,19 @@ from pack.knowledge import (
     get_knowledge_context
 )
 
+import uuid
+import mysql.connector
+
+# UUID生成
+process_uuid = str(uuid.uuid4())
+
+
+if Check_previous_session() == 1:
+    sys_msg="前回のセッションが正常に閉じられませんでした。"
+else:
+    sys_msg=""
+
+Create_session(process_uuid)
 try:
     init_knowledge_table()
 except Exception as e:
@@ -501,12 +519,16 @@ def load_system_prompt():
     except FileNotFoundError:
         base_prompt = "あなたは自然な日本語を話すAIアシスタントです。"
     current_date=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    if sys_msg!="":
+        session_msg=sys_msg
+        sys_msg=""
     return (
         f"あなたの名前は「{bot_name}」です。"
         f"ユーザーはあなたを「{bot_name}」として扱います。"
         f"自分自身について話すときも、その名前と人格設定を維持してください。"
         f"{base_prompt}"
         f"現在時刻は{current_date}です。"
+        f"{session_msg}"
     )
 
 LOG_ENABLD=load_log()
@@ -1633,5 +1655,6 @@ def main():
 if __name__ == "__main__":
     try:
         main()
+        End_session()
     finally:
         sys.exit(0)
