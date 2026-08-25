@@ -505,7 +505,7 @@ def load_token():
 from datetime import datetime
 
 def load_system_prompt():
-
+    global sys_msg
     bot_name = load_BotName()
 
     try:
@@ -1656,6 +1656,6 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-        End_session()
+        End_session(process_uuid)
     finally:
         sys.exit(0)
