@@ -521,6 +521,8 @@ def load_system_prompt():
     if sys_msg!="":
         session_msg=sys_msg
         sys_msg=""
+    else:
+        session_msg=""
     return (
         f"あなたの名前は「{bot_name}」です。"
         f"ユーザーはあなたを「{bot_name}」として扱います。"
