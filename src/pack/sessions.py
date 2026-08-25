@@ -22,10 +22,20 @@ def _connect_db():
 
 
 def Create_session(process_uuid):
-    # process_uuid = str(uuid.uuid4())
+    #process_uuid = str(uuid.uuid4())
 
     conn = _connect_db()
     cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS process_status (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            uuid CHAR(36) NOT NULL UNIQUE,
+            finished TINYINT(1) NOT NULL DEFAULT 0
+        )
+        """
+    )
 
     cursor.execute(
         """
@@ -40,7 +50,6 @@ def Create_session(process_uuid):
     cursor.close()
     conn.close()
 
-    return process_uuid
 
 
 def End_session(process_uuid):

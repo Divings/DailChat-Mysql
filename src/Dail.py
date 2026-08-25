@@ -29,7 +29,6 @@ from pack.knowledge import (
 )
 
 import uuid
-import mysql.connector
 
 # UUID生成
 process_uuid = str(uuid.uuid4())
