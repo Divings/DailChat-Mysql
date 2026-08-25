@@ -522,7 +522,7 @@ def load_system_prompt():
         session_msg=sys_msg
         sys_msg=""
     else:
-        session_msg=""
+        session_msg="現在、セッションエラーはありません"
     return (
         f"あなたの名前は「{bot_name}」です。"
         f"ユーザーはあなたを「{bot_name}」として扱います。"
