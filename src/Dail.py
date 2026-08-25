@@ -485,7 +485,7 @@ def load_token():
         return int(config["DEFAULT"]["Max_Token"])
     except (KeyError, ValueError):
         return 1024
-
+from datetime import datetime
 
 def load_system_prompt():
 
@@ -494,18 +494,19 @@ def load_system_prompt():
     try:
         with open(SYSTEM_PROMPT_FILE, "r", encoding="utf-8") as f:
             base_prompt = f.read().strip()
-
+        
         if not base_prompt:
             base_prompt = "あなたは自然な日本語を話すAIアシスタントです。"
 
     except FileNotFoundError:
         base_prompt = "あなたは自然な日本語を話すAIアシスタントです。"
-
+    current_date=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return (
         f"あなたの名前は「{bot_name}」です。"
         f"ユーザーはあなたを「{bot_name}」として扱います。"
         f"自分自身について話すときも、その名前と人格設定を維持してください。"
         f"{base_prompt}"
+        f"現在時刻は{current_date}です。"
     )
 
 LOG_ENABLD=load_log()
