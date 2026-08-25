@@ -1662,5 +1662,4 @@ if __name__ == "__main__":
         print(" 予期せぬエラーが発生しました。")
         print(f" {type(e).__name__}: {e}")
         traceback.print_exc()
-    finally:
-        sys.exit(0)
+    
