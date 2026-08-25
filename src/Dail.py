@@ -1657,5 +1657,10 @@ if __name__ == "__main__":
     try:
         main()
         End_session(process_uuid)
+    except Exception as e:
+        print("")
+        print(" 予期せぬエラーが発生しました。")
+        print(f" {type(e).__name__}: {e}")
+        traceback.print_exc()
     finally:
         sys.exit(0)
