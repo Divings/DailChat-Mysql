@@ -33,11 +33,11 @@ import uuid
 # UUID生成
 process_uuid = str(uuid.uuid4())
 
-
 if Check_previous_session() == 1:
     sys_msg="前回のセッションが正常に閉じられませんでした。"
 else:
     sys_msg=""
+
 
 Create_session(process_uuid)
 try:

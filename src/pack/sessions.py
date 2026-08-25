@@ -74,15 +74,18 @@ def End_session(process_uuid):
 def Check_previous_session():
     conn = _connect_db()
     cursor = conn.cursor()
-
-    cursor.execute(
-        """
-        SELECT finished
-        FROM process_status
-        ORDER BY id DESC
-        LIMIT 1
-        """
-    )
+    try:
+        cursor.execute(
+            """
+            SELECT finished
+            FROM process_status
+            ORDER BY id DESC
+            LIMIT 1
+            """
+        )
+    except mysql.connector.errors.ProgrammingError:
+        # If the table does not exist, return 0 (no previous session)
+        return 0
 
     row = cursor.fetchone()
 
