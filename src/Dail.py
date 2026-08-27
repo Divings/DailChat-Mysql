@@ -318,7 +318,9 @@ def get_appdata_dir():
 
 APP_DATA=get_appdata_dir()
 CONFIG_DIR = "config"
-DATA_DIR = "data"
+from pathlib import Path
+
+DATA_DIR = Path.home() / ".local" / "share" / "Dail"
 LOG_DIR ="logs"
 
 MEMORY_KEY_FILE = os.path.join(
@@ -402,6 +404,19 @@ if DVD_MODE==0:
     os.makedirs(DATA_DIR, exist_ok=True)
     os.makedirs(LOG_DIR, exist_ok=True)
 
+os.makedirs(DATA_DIR, exist_ok=True)
+# パーミッションエラーの防止
+if os.path.isfile("/opt/Dail/data/memory.vlm"):
+    for file in os.listdir("/opt/Dail/data/"):
+        if file.startswith("memory."):
+            shutil.copyfile(
+                os.path.join("/opt/Dail/data/", file),
+                os.path.join(DATA_DIR, file)
+            )
+    os.remove("/opt/Dail/data/memory.vlm")
+    os.remove("/opt/Dail/data/memory.key")
+    os.remove("/opt/Dail/data/memory.vlm.sha256")
+    
 # =========================================================
 # MySQL設定チェック
 # =========================================================
