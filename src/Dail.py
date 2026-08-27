@@ -1438,7 +1438,8 @@ def main():
 
     if pre_clear:
         # 起動時に画面クリアする場合は少し待機してからクリア(その後簡単なメニュー表示)
-        time.sleep(4)
+        print("2秒後に画面をクリアします...")
+        time.sleep(2)
         os.system("clear")
         try:
             print(pyfiglet.figlet_format("Velwether",font="slant"))
