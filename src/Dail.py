@@ -406,13 +406,12 @@ if DVD_MODE==0:
 
 os.makedirs(DATA_DIR, exist_ok=True)
 if not os.path.isfile(DATA_DIR / "Sys_Prompt.txt"):
-    a = input(" システムプロンプトファイルを、データディレクトリにコピーしますか？(上書きされます) [y/n] >> ")
-    if a.lower() == "y":
-        shutil.copyfile(
-            "/opt/Dail/config/Sys_Prompt.txt",
-            os.path.join(DATA_DIR, "Sys_Prompt.txt")
-        )
-        SYSTEM_PROMPT_FILE = DATA_DIR / "Sys_Prompt.txt"
+
+    shutil.copyfile(
+        "/opt/Dail/config/Sys_Prompt_Template.txt",
+        os.path.join(DATA_DIR, "Sys_Prompt.txt")
+    )
+    SYSTEM_PROMPT_FILE = DATA_DIR / "Sys_Prompt.txt"
 else:
     SYSTEM_PROMPT_FILE = DATA_DIR / "Sys_Prompt.txt"
 
