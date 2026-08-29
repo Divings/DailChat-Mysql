@@ -409,7 +409,7 @@ if not os.path.isfile(DATA_DIR / "Sys_Prompt.txt"):
     a = input(" システムプロンプトファイルを、データディレクトリにコピーしますか？(上書きされます) [y/n] >> ")
     if a.lower() == "y":
         shutil.copyfile(
-            "/opt/Dail/Sys_Prompt.txt",
+            "/opt/Dail/config/Sys_Prompt.txt",
             os.path.join(DATA_DIR, "Sys_Prompt.txt")
         )
         SYSTEM_PROMPT_FILE = DATA_DIR / "Sys_Prompt.txt"
