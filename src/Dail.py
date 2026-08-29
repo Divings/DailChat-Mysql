@@ -405,6 +405,17 @@ if DVD_MODE==0:
     os.makedirs(LOG_DIR, exist_ok=True)
 
 os.makedirs(DATA_DIR, exist_ok=True)
+if not os.path.isfile(DATA_DIR / "Sys_Prompt.txt"):
+    a = input(" システムプロンプトファイルを、データディレクトリにコピーしますか？(上書きされます) [y/n] >> ")
+    if a.lower() == "y":
+        shutil.copyfile(
+            os.path.join(CONFIG_DIR, "Sys_Prompt.txt"),
+            os.path.join(DATA_DIR, "Sys_Prompt.txt")
+        )
+        SYSTEM_PROMPT_FILE = DATA_DIR / "Sys_Prompt.txt"
+else:
+    SYSTEM_PROMPT_FILE = DATA_DIR / "Sys_Prompt.txt"
+
 # パーミッションエラーの防止
 if os.path.isfile("/opt/Dail/data/memory.vlm"):
     for file in os.listdir("/opt/Dail/data/"):
