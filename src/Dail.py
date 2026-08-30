@@ -1068,6 +1068,7 @@ def sync_memory():
     ネット未接続などでDropboxへ接続できない場合は
     ローカルだけでそのまま起動する。
     """
+
     if not load_dropbox_enabled():
         return
 
@@ -1081,7 +1082,11 @@ def sync_memory():
 
         if remote_metadata is not None:
             remote_modified = _to_utc(
-                getattr(remote_metadata, "client_modified", None)
+                getattr(
+                    remote_metadata,
+                    "client_modified",
+                    None
+                )
             )
 
         # 両方ない
@@ -1091,39 +1096,67 @@ def sync_memory():
         # Dropboxだけある
         if local_modified is None and remote_metadata is not None:
             print(" Dropboxから記憶データを取得しています...")
-            download_memory_from_dropbox(dbx, remote_metadata)
+            download_memory_from_dropbox(
+                dbx,
+                remote_metadata
+            )
             print(" Dropboxの記憶データを取得しました。")
             return
 
         # ローカルだけある
         if local_modified is not None and remote_metadata is None:
             print(" ローカルの記憶データをDropboxへ同期しています...")
+
             if upload_memory_to_dropbox(show_error=True):
                 print(" Dropboxへの同期が完了しました。")
+
             return
 
-        # 更新日時が取れない場合はローカル優先
+        # Dropboxの更新日時が取れない場合はローカル優先
         if remote_modified is None:
-            upload_memory_to_dropbox(show_error=True)
+            upload_memory_to_dropbox(
+                show_error=True
+            )
+            return
+
+        # 更新日時の差
+        time_diff = abs(
+            (local_modified - remote_modified).total_seconds()
+        )
+
+        # 1秒以内なら同じものとして扱う
+        if time_diff <= 1:
+            print(" Dropboxとの記憶データは同期済みです。")
             return
 
         # Dropboxの方が新しい
         if remote_modified > local_modified:
             print(" Dropboxに新しい記憶データがあります。")
-            download_memory_from_dropbox(dbx, remote_metadata)
+
+            download_memory_from_dropbox(
+                dbx,
+                remote_metadata
+            )
+
             print(" Dropboxの記憶データを使用します。")
 
         # ローカルの方が新しい
-        elif local_modified > remote_modified:
-            print(" ローカルの記憶データの方が新しいためDropboxへ同期します。")
-            upload_memory_to_dropbox(show_error=True)
-
         else:
-            print(" Dropboxとの記憶データは同期済みです。")
+            print(
+                " ローカルの記憶データの方が新しいため"
+                "Dropboxへ同期します。"
+            )
+
+            upload_memory_to_dropbox(
+                show_error=True
+            )
 
     except Exception as e:
         print("")
-        print(" Dropboxに接続できないためローカルの記憶データを使用します。")
+        print(
+            " Dropboxに接続できないため"
+            "ローカルの記憶データを使用します。"
+        )
         print(f" {e}")
 
 
