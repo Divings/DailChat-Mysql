@@ -335,20 +335,6 @@ SYSTEM_PROMPT_FILE = os.path.join(CONFIG_DIR, "Sys_Prompt.txt")
 MEMORY_CONFIG_FILE = os.path.join(CONFIG_DIR, "memory.ini")
 
 DVD_MODE = load_DVDmode()
-if DVD_MODE == 0:
-    try:
-        os.makedirs(DATA_DIR, exist_ok=True)
-        test_file = os.path.join(DATA_DIR, "test.txt")
-        with open(test_file, "w", encoding="utf-8") as f:
-            f.write("test")
-        os.remove(test_file)
-    except Exception as e:
-        print("")
-        print(" データディレクトリに書き込みできません。")
-        print(" DVDモードを有効にするか、書き込み可能な場所で実行してください。")
-        print("")
-        print("モードを反転して起動します。")
-        DVD_MODE = 1
 
 if DVD_MODE==0:
     DROPBOX_CONFIG_FILE = os.path.join(CONFIG_DIR, "dropbox.ini")
