@@ -81,6 +81,8 @@ sys.stderr.reconfigure(
 DATABASE_CONFIG_FILE = os.path.join("config", "database.conf")
 
 
+
+
 def load_database_config():
     """config/database.conf からMySQL接続情報を読み込む。"""
     if not os.path.isfile(DATABASE_CONFIG_FILE):
@@ -595,6 +597,30 @@ def load_dropbox_config():
     """
     return load_settings_from_db("DROPBOX")
 
+def load_dropbox_key_path():
+    """
+    memory.key のDropbox保存先を取得する。
+    key_path が未設定の場合は memory_path と同じフォルダに
+    memory.key として保存する。
+    """
+    config = load_dropbox_config()
+
+    try:
+        path = config["DROPBOX"]["key_path"].strip()
+        if path:
+            return path
+    except KeyError:
+        pass
+
+    memory_path = load_dropbox_memory_path()
+    normalized = memory_path.replace("\\", "/")
+
+    parent = normalized.rsplit("/", 1)[0]
+
+    if not parent:
+        return "/memory.key"
+
+    return parent + "/memory.key"
 
 def load_dropbox_enabled():
     config = load_dropbox_config()
@@ -780,11 +806,11 @@ def get_dropbox_memory_metadata(dbx):
     except Exception:
         return None
 
-
 def upload_memory_to_dropbox(show_error=False):
     """
-    memory.vlmをDropboxへアップロードする。
-    アップロード後に再取得し、SHA-256が一致することを確認する。
+    memory.vlm と memory.key をDropboxへアップロードする。
+    memory.vlm はアップロード後に再取得し、
+    SHA-256が一致することを確認する。
     """
     if not load_dropbox_enabled():
         return False
@@ -796,11 +822,18 @@ def upload_memory_to_dropbox(show_error=False):
         import dropbox
 
         dbx = get_dropbox_client()
+
         remote_path = load_dropbox_memory_path()
+        remote_key_path = load_dropbox_key_path()
 
         ensure_dropbox_parent(dbx, remote_path)
+        ensure_dropbox_parent(dbx, remote_key_path)
 
         local_modified = get_local_memory_modified()
+
+        # ==============================
+        # memory.vlm
+        # ==============================
 
         with open(CHAT_LOG_FILE, "rb") as f:
             local_data = f.read()
@@ -821,96 +854,204 @@ def upload_memory_to_dropbox(show_error=False):
 
         # 転送後に再取得して確認
         _, verify_response = dbx.files_download(remote_path)
-        remote_hash = sha256_bytes(verify_response.content)
+
+        remote_hash = sha256_bytes(
+            verify_response.content
+        )
 
         if local_hash != remote_hash:
             raise RuntimeError(
                 "Dropbox転送後のSHA-256が一致しません。"
             )
 
+        # ==============================
+        # memory.key
+        # ==============================
+
+        if os.path.isfile(MEMORY_KEY_FILE):
+
+            with open(MEMORY_KEY_FILE, "rb") as f:
+                key_data = f.read()
+
+            dbx.files_upload(
+                key_data,
+                remote_key_path,
+                mode=dropbox.files.WriteMode.overwrite,
+                mute=True
+            )
+
         return True
 
     except Exception as e:
+
         if show_error:
             print("")
-            print(" Dropboxへの記憶データ同期に失敗しました。")
-            print(f" {type(e).__name__}: {e}")
+            print(
+                " Dropboxへの記憶データ同期に失敗しました。"
+            )
+            print(
+                f" {type(e).__name__}: {e}"
+            )
             traceback.print_exc()
 
         return False
 
-
 def download_memory_from_dropbox(dbx, metadata):
     """
-    Dropboxのmemory.vlmを一時ファイルへ取得し、
-    SHA-256と内容を確認してからローカルへ置換する。
-    平文JSONと暗号化形式の両方に対応する。
+    Dropboxのmemory.vlmとmemory.keyを取得する。
+
+    memory.keyがDropbox側に存在する場合は先に取得し、
+    memory.vlmを一時ファイルへ取得して検証後、
+    ローカルへ置換する。
     """
     import json
 
     remote_path = load_dropbox_memory_path()
+    remote_key_path = load_dropbox_key_path()
+
     temp_file = CHAT_LOG_FILE + ".tmp"
 
-    _, response = dbx.files_download(remote_path)
-
-    remote_hash = sha256_bytes(response.content)
-
-    with open(temp_file, "wb") as f:
-        f.write(response.content)
+    # ==============================
+    # memory.key を先に取得
+    # ==============================
 
     try:
-        temp_hash = sha256_file(temp_file)
+        _, key_response = dbx.files_download(
+            remote_key_path
+        )
+
+        os.makedirs(
+            os.path.dirname(
+                os.fspath(MEMORY_KEY_FILE)
+            ),
+            exist_ok=True
+        )
+
+        key_temp_file = (
+            os.fspath(MEMORY_KEY_FILE) + ".tmp"
+        )
+
+        with open(key_temp_file, "wb") as f:
+            f.write(
+                key_response.content
+            )
+
+        os.replace(
+            key_temp_file,
+            MEMORY_KEY_FILE
+        )
+
+    except Exception:
+        # Dropbox側にキーが無い場合は
+        # 既存のローカルキーを使用する
+        pass
+
+    # ==============================
+    # memory.vlm を取得
+    # ==============================
+
+    _, response = dbx.files_download(
+        remote_path
+    )
+
+    remote_hash = sha256_bytes(
+        response.content
+    )
+
+    with open(temp_file, "wb") as f:
+        f.write(
+            response.content
+        )
+
+    try:
+        temp_hash = sha256_file(
+            temp_file
+        )
 
         if remote_hash != temp_hash:
             raise RuntimeError(
-                "Dropboxから取得したmemory.vlmのSHA-256が一致しません。"
+                "Dropboxから取得したmemory.vlmの"
+                "SHA-256が一致しません。"
             )
 
-        # 旧形式の平文JSONとして読めるか確認
+        # 旧形式の平文JSONか確認
         try:
-            with open(temp_file, "r", encoding="utf-8") as f:
+            with open(
+                temp_file,
+                "r",
+                encoding="utf-8"
+            ) as f:
                 test_messages = json.load(f)
 
-            if not isinstance(test_messages, list):
+            if not isinstance(
+                test_messages,
+                list
+            ):
                 raise ValueError(
-                    "Dropbox上のmemory.vlmの形式が正しくありません。"
+                    "Dropbox上のmemory.vlmの形式が"
+                    "正しくありません。"
                 )
 
             for message in test_messages:
-                if not isinstance(message, dict):
+
+                if not isinstance(
+                    message,
+                    dict
+                ):
                     raise ValueError(
-                        "Dropbox上のmemory.vlmのメッセージ形式が正しくありません。"
+                        "Dropbox上のmemory.vlmの"
+                        "メッセージ形式が正しくありません。"
                     )
 
         except Exception:
-            # 平文JSONでなければ暗号化形式として復号テスト
+
+            # 平文JSONでなければ暗号化形式
             test_messages = decrypt_memory(
                 temp_file,
                 MEMORY_KEY_FILE
             )
 
-            if not isinstance(test_messages, list):
+            if not isinstance(
+                test_messages,
+                list
+            ):
                 raise ValueError(
-                    "Dropbox上の暗号化memory.vlmの形式が正しくありません。"
+                    "Dropbox上の暗号化memory.vlmの"
+                    "形式が正しくありません。"
                 )
 
-        os.replace(temp_file, CHAT_LOG_FILE)
+        os.replace(
+            temp_file,
+            CHAT_LOG_FILE
+        )
 
-        # ダウンロード後のハッシュを保存
         save_memory_hash()
 
     except Exception:
+
         if os.path.isfile(temp_file):
             os.remove(temp_file)
+
         raise
 
     remote_modified = _to_utc(
-        getattr(metadata, "client_modified", None)
+        getattr(
+            metadata,
+            "client_modified",
+            None
+        )
     )
 
     if remote_modified is not None:
-        timestamp = remote_modified.timestamp()
-        os.utime(CHAT_LOG_FILE, (timestamp, timestamp))
+
+        timestamp = (
+            remote_modified.timestamp()
+        )
+
+        os.utime(
+            CHAT_LOG_FILE,
+            (timestamp, timestamp)
+        )
 
 
 def sync_memory():
