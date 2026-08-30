@@ -1165,7 +1165,7 @@ def build_context(messages):
         "content": system_prompt
     }
 
-    if MAX_MEMORY <= 0:
+    if MAX_MEMORY < 0:
         return [system_message]
 
     recent_messages = conversation_messages[-MAX_MEMORY:]
