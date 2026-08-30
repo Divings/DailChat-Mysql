@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>DailChat-Mysql</title>
+
+  <meta
+    name="description"
+    content="MySQLによる長期記憶・設定管理に対応したLinux向けAIチャットボット DailChat-Mysql"
+  >
+
+  <style>
+    :root {
+      --bg: #0f1117;
+      --panel: #171a22;
+      --panel-light: #1e222d;
+      --text: #e8eaf0;
+      --subtext: #a9afbd;
+      --accent: #7c9cff;
+      --accent-hover: #9bb2ff;
+      --border: #2b3040;
+      --code-bg: #0b0d12;
+      --success: #61d095;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Noto Sans JP",
+        sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.8;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    a:hover {
+      color: var(--accent-hover);
+    }
+
+    header {
+      padding: 100px 24px 80px;
+      text-align: center;
+      background:
+        radial-gradient(
+          circle at top,
+          rgba(124, 156, 255, 0.20),
+          transparent 45%
+        );
+      border-bottom: 1px solid var(--border);
+    }
+
+    header h1 {
+      margin: 0 0 16px;
+      font-size: clamp(2.6rem, 7vw, 4.8rem);
+      letter-spacing: -0.04em;
+    }
+
+    header .subtitle {
+      max-width: 780px;
+      margin: 0 auto;
+      color: var(--subtext);
+      font-size: 1.15rem;
+    }
+
+    .badge {
+      display: inline-block;
+      margin-bottom: 20px;
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--success);
+      background: rgba(97, 208, 149, 0.08);
+      font-size: 0.9rem;
+    }
+
+    .buttons {
+      margin-top: 34px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .button {
+      display: inline-block;
+      padding: 12px 22px;
+      border-radius: 8px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      transition:
+        transform 0.15s ease,
+        background 0.15s ease,
+        border-color 0.15s ease;
+    }
+
+    .button:hover {
+      color: var(--text);
+      transform: translateY(-2px);
+      border-color: var(--accent);
+    }
+
+    .button.primary {
+      background: var(--accent);
+      color: #080a10;
+      border-color: var(--accent);
+    }
+
+    .button.primary:hover {
+      color: #080a10;
+      background: var(--accent-hover);
+    }
+
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(15, 17, 23, 0.93);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    nav .nav-inner {
+      max-width: 1100px;
+      margin: auto;
+      padding: 14px 24px;
+      display: flex;
+      gap: 22px;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    nav a {
+      color: var(--subtext);
+      font-size: 0.95rem;
+    }
+
+    nav a:hover {
+      color: var(--text);
+    }
+
+    main {
+      max-width: 1100px;
+      margin: auto;
+      padding: 55px 24px 90px;
+    }
+
+    section {
+      margin-bottom: 76px;
+      scroll-margin-top: 80px;
+    }
+
+    h2 {
+      margin-bottom: 22px;
+      font-size: 2rem;
+    }
+
+    h3 {
+      margin-top: 32px;
+      margin-bottom: 12px;
+    }
+
+    .lead {
+      max-width: 850px;
+      color: var(--subtext);
+      font-size: 1.05rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns:
+        repeat(auto-fit, minmax(250px, 1fr));
+      gap: 18px;
+      margin-top: 28px;
+    }
+
+    .card {
+      padding: 24px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .card h3 {
+      margin-top: 0;
+    }
+
+    .card p {
+      color: var(--subtext);
+      margin-bottom: 0;
+    }
+
+    .download-box {
+      margin: 28px 0;
+      padding: 28px;
+      background:
+        linear-gradient(
+          135deg,
+          rgba(124, 156, 255, 0.10),
+          rgba(97, 208, 149, 0.05)
+        );
+      border: 1px solid var(--border);
+      border-radius: 14px;
+    }
+
+    .download-box h3 {
+      margin-top: 0;
+    }
+
+    .download-box p {
+      color: var(--subtext);
+    }
+
+    pre {
+      overflow-x: auto;
+      padding: 18px;
+      border-radius: 10px;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+    }
+
+    code {
+      font-family:
+        "Cascadia Code",
+        "SFMono-Regular",
+        Consolas,
+        monospace;
+    }
+
+    .inline-code {
+      padding: 2px 7px;
+      border-radius: 5px;
+      background: var(--panel-light);
+      border: 1px solid var(--border);
+      font-family:
+        "Cascadia Code",
+        "SFMono-Regular",
+        Consolas,
+        monospace;
+    }
+
+    .note {
+      padding: 16px 18px;
+      border-left: 4px solid var(--accent);
+      background: var(--panel);
+      color: var(--subtext);
+      border-radius: 0 8px 8px 0;
+    }
+
+    .architecture {
+      font-size: 1rem;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 38px 24px;
+      text-align: center;
+      color: var(--subtext);
+    }
+
+    footer a {
+      margin: 0 8px;
+    }
+
+    @media (max-width: 600px) {
+      header {
+        padding-top: 70px;
+        padding-bottom: 60px;
+      }
+
+      main {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+
+      .download-box {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+
+    <div class="badge">
+      Open Source / Linux
+    </div>
+
+    <h1>DailChat-Mysql</h1>
+
+    <p class="subtitle">
+      MySQLによる長期記憶・設定管理に対応した、
+      Linux向けAIチャットボット。
+    </p>
+
+    <div class="buttons">
+
+      <a
+        class="button primary"
+        href="https://github.com/Divings/DailChat-Mysql/releases/latest"
+      >
+        Download Latest RPM
+      </a>
+
+      <a
+        class="button"
+        href="https://github.com/Divings/DailChat-Mysql"
+      >
+        GitHub Repository
+      </a>
+
+      <a
+        class="button"
+        href="#installation"
+      >
+        Installation
+      </a>
+
+    </div>
+
+  </header>
+
+
+  <nav>
+    <div class="nav-inner">
+
+      <a href="#about">
+        About
+      </a>
+
+      <a href="#features">
+        Features
+      </a>
+
+      <a href="#installation">
+        Installation
+      </a>
+
+      <a href="#configuration">
+        Configuration
+      </a>
+
+      <a href="#architecture">
+        Architecture
+      </a>
+
+      <a href="#security">
+        Security
+      </a>
+
+      <a href="#license">
+        License
+      </a>
+
+    </div>
+  </nav>
+
+
+  <main>
+
+
+    <section id="about">
+
+      <h2>About</h2>
+
+      <p class="lead">
+        DailChat-Mysqlは、PythonとMySQLを利用して動作する
+        AIチャットボットです。
+      </p>
+
+      <p class="lead">
+        AIとの会話だけでなく、設定情報や長期記憶を
+        MySQL上で管理できる構成となっており、
+        Linuxサーバー上で継続的に利用することを想定しています。
+      </p>
+
+      <p class="lead">
+        GitHub Releasesでは、Linux環境へ導入できる
+        RPMパッケージも公開しています。
+      </p>
+
+    </section>
+
+
+    <section id="features">
+
+      <h2>Features</h2>
+
+      <div class="grid">
+
+        <div class="card">
+
+          <h3>MySQL Data Management</h3>
+
+          <p>
+            Dailの設定情報や各種データを
+            MySQL上で管理します。
+          </p>
+
+        </div>
+
+
+        <div class="card">
+
+          <h3>Long-term Memory</h3>
+
+          <p>
+            保存された情報を利用し、
+            過去の情報を保持した継続的な対話に対応します。
+          </p>
+
+        </div>
+
+
+        <div class="card">
+
+          <h3>Gemini API</h3>
+
+          <p>
+            Gemini APIを利用してAIの応答を生成します。
+            使用するモデルやAPIキーなどは設定から変更できます。
+          </p>
+
+        </div>
+
+
+        <div class="card">
+
+          <h3>Dropbox Integration</h3>
+
+          <p>
+            Dropboxとの連携に対応しています。
+            設定によって機能の有効・無効を切り替えられます。
+          </p>
+
+        </div>
+
+
+        <div class="card">
+
+          <h3>System Prompt</h3>
+
+          <p>
+            システムプロンプトをファイルとして管理し、
+            ユーザー環境に応じたAI設定を行えます。
+          </p>
+
+        </div>
+
+
+        <div class="card">
+
+          <h3>Linux</h3>
+
+          <p>
+            Linuxサーバー上での利用を想定して設計されています。
+            RPMパッケージによる導入にも対応しています。
+          </p>
+
+        </div>
+
+
+        <div class="card">
+
+          <h3>CLI</h3>
+
+          <p>
+            インストール完了後は、
+            <span class="inline-code">dail</span>
+            コマンドから起動できます。
+          </p>
+
+        </div>
+
+
+        <div class="card">
+
+          <h3>Open Source</h3>
+
+          <p>
+            ソースコードはGitHub上で公開されています。
+            ソースからのセットアップも可能です。
+          </p>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <section id="installation">
+
+      <h2>Installation</h2>
+
+      <div class="download-box">
+
+        <h3>Latest RPM</h3>
+
+        <p>
+          最新版のRPMパッケージは
+          GitHub Releasesからダウンロードできます。
+        </p>
+
+        <a
+          class="button primary"
+          href="https://github.com/Divings/DailChat-Mysql/releases/latest"
+        >
+          Download Latest Release
+        </a>
+
+      </div>
+
+
+      <h3>RPM Package</h3>
+
+      <p>
+        GitHub Releasesから最新版の
+        <span class="inline-code">.rpm</span>
+        ファイルをダウンロードします。
+      </p>
+
+      <p>
+        RPMファイルを保存したディレクトリで、
+        以下のコマンドを実行します。
+      </p>
+
+      <pre><code>sudo dnf install ./dail-*.rpm</code></pre>
+
+      <p>
+        依存関係がある場合は、
+        <span class="inline-code">dnf</span>
+        によって必要なパッケージも処理されます。
+      </p>
+
+
+      <h3>Start Dail</h3>
+
+      <p>
+        インストール完了後は、
+        以下のコマンドでDailを起動します。
+      </p>
+
+      <pre><code>dail</code></pre>
+
+
+      <h3>Update</h3>
+
+      <p>
+        新しいRPMをダウンロードした場合も、
+        同様に
+        <span class="inline-code">dnf install</span>
+        を実行することで更新できます。
+      </p>
+
+      <pre><code>sudo dnf install ./dail-*.rpm</code></pre>
+
+
+      <h3>Install from Source</h3>
+
+      <p>
+        RPMを使用せず、
+        ソースコードからセットアップすることもできます。
+      </p>
+
+      <pre><code>git clone https://github.com/Divings/DailChat-Mysql.git
+cd DailChat-Mysql</code></pre>
+
+      <p>
+        セットアップスクリプトへ実行権限を付与します。
+      </p>
+
+      <pre><code>chmod +x setup.sh</code></pre>
+
+      <p>
+        セットアップを実行します。
+      </p>
+
+      <pre><code>./setup.sh</code></pre>
+
+
+      <div class="note">
+
+        RPMパッケージを利用する場合は、
+        GitHub Releasesで公開されている最新版の利用を推奨します。
+
+      </div>
+
+    </section>
+
+
+    <section id="configuration">
+
+      <h2>Configuration</h2>
+
+      <p>
+        DailChat-Mysqlでは、
+        データベースやAI、Dropboxなどの設定を
+        設定ファイルから管理します。
+      </p>
+
+
+      <h3>Database</h3>
+
+      <p>
+        MySQLへの接続情報を設定します。
+      </p>
+
+      <pre><code>[DATABASE]
+host = localhost
+port = 3306
+user = Users
+password = Password
+database = Database</code></pre>
+
+
+      <p>
+        実際の環境に合わせて、
+        MySQLユーザー名、パスワード、
+        データベース名などを変更してください。
+      </p>
+
+
+      <h3>Gemini API</h3>
+
+      <p>
+        AI応答の生成にはGemini APIを使用します。
+      </p>
+
+      <p>
+        APIキーや使用するモデルなどは、
+        Dailの設定から指定します。
+      </p>
+
+
+      <h3>System Prompt</h3>
+
+      <p>
+        Dailが使用するシステムプロンプトは
+        専用ファイルとして管理できます。
+      </p>
+
+      <p>
+        システムプロンプトを編集することで、
+        AIの基本的な役割や応答方針を変更できます。
+      </p>
+
+
+      <h3>Dropbox</h3>
+
+      <p>
+        Dropbox機能を利用する場合は、
+        Dropbox用の認証情報を設定します。
+      </p>
+
+      <p>
+        Dropbox機能を使用しない場合は、
+        設定から無効化できます。
+      </p>
+
+    </section>
+
+
+    <section id="architecture">
+
+      <h2>Architecture</h2>
+
+      <p>
+        DailChat-Mysqlは、
+        AI APIとMySQLを中心に構成されています。
+      </p>
+
+      <pre class="architecture"><code>User
+ │
+ ▼
+DailChat-Mysql
+ │
+ ├── Core
+ │
+ │
+ ├── System Prompt
+ │
+ ├── Gemini API
+ │
+ ├── MySQL
+ │   │
+ │   ├── Settings
+ │   └── Long-term Memory
+ │
+ └── Dropbox
+     │
+     └── Optional Integration</code></pre>
+
+    </section>
+
+
+    <section id="usage">
+
+      <h2>Usage</h2>
+
+      <p>
+        Dailを起動します。
+      </p>
+
+      <pre><code>dail</code></pre>
+
+      <p>
+        起動後はターミナル上から
+        Dailとの対話を行えます。
+      </p>
+
+    </section>
+
+
+    <section id="security">
+
+      <h2>Security</h2>
+
+      <p>
+        DailChat-Mysqlでは、
+        APIキーやデータベースの認証情報などを扱います。
+      </p>
+
+      <p>
+        以下のような情報を
+        公開Gitリポジトリへコミットしないでください。
+      </p>
+
+      <pre><code>Gemini API Key
+MySQL Password
+Dropbox App Key
+Dropbox Refresh Token
+その他の認証情報</code></pre>
+
+      <p>
+        設定ファイルをGitで管理する場合は、
+        秘密情報を除外するか、
+        <span class="inline-code">.gitignore</span>
+        などを適切に設定してください。
+      </p>
+
+    </section>
+
+
+    <section id="requirements">
+
+      <h2>Requirements</h2>
+
+      <div class="grid">
+
+        <div class="card">
+          <h3>Operating System</h3>
+          <p>
+            Linux
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>Database</h3>
+          <p>
+            MySQL / compatible database environment
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>AI</h3>
+          <p>
+            Gemini API
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>Package</h3>
+          <p>
+            RPM package available from GitHub Releases
+          </p>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <section id="source">
+
+      <h2>Source Code</h2>
+
+      <p>
+        ソースコードはGitHubで公開しています。
+      </p>
+
+      <p>
+        バグ報告、ソースコードの確認、
+        最新版の取得については
+        GitHubリポジトリを参照してください。
+      </p>
+
+      <div class="buttons">
+
+        <a
+          class="button"
+          href="https://github.com/Divings/DailChat-Mysql"
+        >
+          View Repository
+        </a>
+
+        <a
+          class="button"
+          href="https://github.com/Divings/DailChat-Mysql/releases"
+        >
+          View Releases
+        </a>
+
+      </div>
+
+    </section>
+
+
+    <section id="license">
+
+      <h2>License</h2>
+
+      <p>
+        DailChat-Mysqlはオープンソースソフトウェアです。
+      </p>
+
+      <p>
+        ライセンスの詳細については、
+        GitHubリポジトリ内の
+        <span class="inline-code">LICENSE</span>
+        を参照してください。
+      </p>
+
+      <p>
+        <a
+          href="https://github.com/Divings/DailChat-Mysql"
+        >
+          Divings/DailChat-Mysql
+        </a>
+      </p>
+
+    </section>
+
+
+  </main>
+
+
+  <footer>
+
+    <strong>DailChat-Mysql</strong>
+
+    <br>
+
+    Linux AI Chatbot with MySQL Long-term Memory
+
+    <br><br>
+
+    <a
+      href="https://github.com/Divings/DailChat-Mysql"
+    >
+      GitHub
+    </a>
+
+    <a
+      href="https://github.com/Divings/DailChat-Mysql/releases/latest"
+    >
+      Latest Release
+    </a>
+
+  </footer>
+
+</body>
+</html>
+
