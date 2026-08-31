@@ -489,7 +489,14 @@ def load_BotName():
     Bot Name
     """
     config = load_config()
+    app=get_appdata_dir()
+    if os.path.isfile(os.path.join(app, "bot_name.conf")):
+        bot_config = configparser.ConfigParser()
+        bot_config.read(os.path.join(app, "bot_name.conf"), encoding="utf-8")
 
+        bot_name = bot_config.get("DEFAULT", "bot_name", fallback="").strip()
+        if bot_name:
+            return bot_name
     try:
         return config["DEFAULT"]["bot_name"]
     except KeyError:
