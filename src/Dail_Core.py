@@ -489,7 +489,7 @@ def load_BotName():
     Bot Name
     """
     config = load_config()
-    app=get_appdata_dir()
+    app=DATA_DIR
     if os.path.isfile(os.path.join(app, "bot_name.conf")):
         bot_config = configparser.ConfigParser()
         bot_config.read(os.path.join(app, "bot_name.conf"), encoding="utf-8")
