@@ -639,6 +639,19 @@ def load_dropbox_enabled():
 
 
 def load_dropbox_memory_path():
+    local_file = os.path.join(DATA_DIR, "memory.conf")
+
+    if os.path.isfile(local_file):
+        config = configparser.ConfigParser()
+        config.read(local_file, encoding="utf-8")
+
+        try:
+            path = config["DROPBOX"]["memory_path"].strip()
+            if path:
+                return path
+        except KeyError:
+            pass
+
     config = load_dropbox_config()
 
     try:
