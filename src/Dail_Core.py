@@ -630,12 +630,31 @@ def load_dropbox_key_path():
     return parent + "/memory.key"
 
 def load_dropbox_enabled():
+    local_file = os.path.join(DATA_DIR, "memory.conf")
+
+    if os.path.isfile(local_file):
+        config = configparser.ConfigParser()
+        config.read(local_file, encoding="utf-8")
+
+        if "DROPBOX" in config:
+            try:
+                return config["DROPBOX"].getboolean("enabled")
+            except ValueError:
+                pass
+            except KeyError:
+                pass
+
     config = load_dropbox_config()
 
-    try:
-        return config["DROPBOX"].getboolean("enabled")
-    except (KeyError, ValueError):
-        return False
+    if "DROPBOX" in config:
+        try:
+            return config["DROPBOX"].getboolean("enabled")
+        except ValueError:
+            pass
+        except KeyError:
+            pass
+
+    return False
 
 
 def load_dropbox_memory_path():
