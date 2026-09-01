@@ -647,18 +647,18 @@ def load_dropbox_memory_path():
 
         try:
             path = config["DROPBOX"]["memory_path"].strip()
-            if path:
-                return path
+            return path if path else f"/{BOT_NAME}/memory.vlm"
         except KeyError:
-            pass
+            
+            return f"/{BOT_NAME}/memory.vlm"
 
     config = load_dropbox_config()
 
     try:
         path = config["DROPBOX"]["memory_path"].strip()
-        return path if path else "/Velwether/memory.vlm"
+        return path if path else f"/{BOT_NAME}/memory.vlm"
     except KeyError:
-        return "/Velwether/memory.vlm"
+        return f"/{BOT_NAME}/memory.vlm"
 
 
 def get_dropbox_client():
